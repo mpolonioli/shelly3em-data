@@ -1,0 +1,18 @@
+[project]
+name = "shelly3em-data"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Michele Polonioli", email = "michele.polonioli@gmail.com"},
+]
+dependencies = ["requests>=2.32.3", "python-dotenv>=1.0.1"]
+requires-python = "==3.13.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+start = "python src/get_data.py"
