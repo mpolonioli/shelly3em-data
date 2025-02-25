@@ -12,7 +12,11 @@ shelly_id = os.getenv("SHELLY_ID")
 shelly_url = os.getenv("SHELLY_URL")
 
 if not token:
-    raise ValueError("⚠️ Errore: BEARER_TOKEN non trovato nel file .env")
+    raise ValueError("❌ Error: missing property SHELLY_BEARER_TOKEN in .env file")
+if not shelly_id:
+    raise ValueError("❌ Error: missing property SHELLY_ID in .env file")
+if not shelly_url:
+    raise ValueError("❌ Error: missing property SHELLY_URL in .env file")
 
 url = f"https://{shelly_url}/v2/statistics/power-consumption/em-3p"
 
