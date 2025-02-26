@@ -7,12 +7,12 @@ from dotenv import load_dotenv
 
 # Load env
 load_dotenv()
-token = os.getenv("SHELLY_BEARER_TOKEN")
+shelly_auth_key = os.getenv("SHELLY_AUTH_KEY")
 shelly_id = os.getenv("SHELLY_ID")
 shelly_url = os.getenv("SHELLY_URL")
 
-if not token:
-    raise ValueError("❌ Error: missing property SHELLY_BEARER_TOKEN in .env file")
+if not shelly_auth_key:
+    raise ValueError("❌ Error: missing property SHELLY_AUTH_KEY in .env file")
 if not shelly_id:
     raise ValueError("❌ Error: missing property SHELLY_ID in .env file")
 if not shelly_url:
@@ -31,7 +31,6 @@ def get_data(start_date, end_date, csv_file):
 
     # Set up headers with authorization
     headers = {
-        "Authorization": f"Bearer {token}",
         "Accept": "application/json"
     }
 
@@ -76,6 +75,7 @@ def get_data(start_date, end_date, csv_file):
                 "date_range": "day",
                 "channel": 0,
                 "id": shelly_id,
+                "auth_key": shelly_auth_key,
             }
 
             # Make the GET request

@@ -1,6 +1,6 @@
 # 📊 Shelly3EM Data
 
-This script fetches energy consumption data from Shelly Control API and stores it in a CSV file. It ensures no duplicate entries by checking the existing CSV file before making API requests.
+This script fetches energy consumption data from Shelly Control Cloud API and stores it in a CSV file. It ensures no duplicate entries by checking the existing CSV file before making API requests.
 
 ## 🚀 Features
 
@@ -9,7 +9,6 @@ This script fetches energy consumption data from Shelly Control API and stores i
 - Skips dates that already exist in the CSV.
 - Supports command-line arguments for flexibility.
 - Automatically creates missing directories for the CSV file.
-- Uses **Bearer Token Authentication** from an `.env` file.
 
 ## 📦 Installation
 
@@ -19,12 +18,12 @@ This script fetches energy consumption data from Shelly Control API and stores i
    ```
 2. Create a `.env` file in the project folder and add:
    ```ini
-   BEARER_TOKEN=your_bearer_token_here
-   SHELLY_ID=your_shelly3em_id_here
-   SHELLY_URL=your_shelly_api_url_here
+   SHELLY_AUTH_KEY=shelly_auth_key_here
+   SHELLY_URL=shelly_api_url_here
+   SHELLY_ID=shelly3em_id_here
    ```
 
-To get the Bearer Token you can inspect an authenticated HTTP request performed by your browser while using the Shelly Control web app at https://control.shelly.cloud
+The `SHELLY_AUTH_KEY` and the `SHELLY_URL` variables are the same used in the [Shelly Control Cloud API](https://shelly-api-docs.shelly.cloud/cloud-control-api/).
 
 ## 🔧 Usage
 ```bash
@@ -63,7 +62,7 @@ The script appends data to a CSV file with the following format:
 
 ## 📝 Notes
 
-- Ensure your Bearer token is **valid** and has access to the required data.
+- Ensure your Shelly auth key and URL is **valid**.
 - The script automatically creates the **CSV file and directories** if they don't exist.
 - The script **skips duplicate dates** to avoid redundant API calls.
 
