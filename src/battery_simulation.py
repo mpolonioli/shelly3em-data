@@ -278,7 +278,7 @@ def main():
     if not os.path.exists(directory):
         print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
         os.makedirs(directory)
-    results.to_csv(args.csv_out, index=False)
+    results.to_csv(args.csv_out, index=True)
     print(f"⏱️ Simulation completed in {end_time - start_time:.2f} seconds")
     print(f"✅ Simulation results saved to {args.csv_out}")
 
