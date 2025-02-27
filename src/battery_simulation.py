@@ -70,7 +70,6 @@ def run_simulation(
     # Start the simulation
     battery_soc = 0
     discharge_total = 0
-    battery_capacity = battery_nominal_capacity
     for index, row in df.iterrows():
         previous_soc = battery_soc
         # Check if we are charging, discharging, or idle
