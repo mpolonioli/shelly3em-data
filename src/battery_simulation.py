@@ -119,14 +119,14 @@ def run_simulation(
                 discharge = 0
                 bought = 0
                 if charge > 0:
-                    print(f"➕ Charging {charge} Wh")
-                print(f"💵 Selling {sold} Wh")
+                    print(f"➕ Charging {charge:.2f} Wh")
+                print(f"💵 Selling {sold:.2f} Wh")
             else:
                 charge = row["IN"] * efficiency_charge
                 sold = 0
                 discharge = 0
                 bought = 0
-                print(f"➕ Charging {charge} Wh")
+                print(f"➕ Charging {charge:.2f} Wh")
         elif row["OUT"] > 0:
             battery_soc -= row["OUT"] * efficiency_discharge
             # Check if the battery SOC is below the minimum charge
@@ -140,14 +140,14 @@ def run_simulation(
                 charge = 0
                 sold = 0
                 if discharge > 0:
-                    print(f"➖ Discharging {discharge} Wh")
-                print(f"💸 Buying {bought} Wh")
+                    print(f"➖ Discharging {discharge:.2f} Wh")
+                print(f"💸 Buying {bought:.2f} Wh")
             else:
                 discharge = row["OUT"] * efficiency_discharge
                 bought = 0
                 charge = 0
                 sold = 0
-                print(f"➖ Discharging {discharge} Wh")
+                print(f"➖ Discharging {discharge:.2f} Wh")
         else:
             discharge = 0
             bought = 0
@@ -186,11 +186,11 @@ def run_simulation(
         df.at[index, "min_charge"] = battery_min_charge
         df.at[index, "capacity"] = battery_nominal_capacity - (battery_cycles * battery_loss_cycle)
         print(f"📅 {index} - "
-              f"SOC: {battery_soc} Wh - "
-              f"Capacity: {battery_capacity} Wh - "
-              f"Cycles: {battery_cycles} - "
-              f"Max Charge: {battery_max_charge} Wh - "
-              f"Min Charge: {battery_min_charge} Wh")
+              f"SOC: {battery_soc:.2f} Wh - "
+              f"Capacity: {battery_capacity:.2f} Wh - "
+              f"Cycles: {battery_cycles:.2f} - "
+              f"Max Charge: {battery_max_charge:.2f} Wh - "
+              f"Min Charge: {battery_min_charge:.2f} Wh")
     return df
 
 def read_data(csv_file):
