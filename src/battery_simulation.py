@@ -41,15 +41,14 @@ def validate_electricity_prices(electricity_prices):
 
     :param electricity_prices: List of ElectricityPrice objects
     """
-    electricity_prices.sort(key=lambda x: (x.time_of_use.days_of_week, x.time_of_use.start_hour))
-
     for day in range(1, 8):
         day_prices = [price for price in electricity_prices if day in price.time_of_use.days_of_week]
+        day_prices.sort(key=lambda x: x.time_of_use.start_hour)
         if not day_prices:
             raise ValueError(f"❌ Missing electricity prices for {calendar.day_name[day - 1]}.")
         if day_prices[0].time_of_use.start_hour != 0 or day_prices[-1].time_of_use.end_hour != 24:
             raise ValueError(f"❌ The time of use must start at 0 and end at 24 to cover the entire day "
-                             f"for day {calendar.day_name[day - 1]}.")
+                             f"for {calendar.day_name[day - 1]}.")
         for i, price in enumerate(day_prices):
             for j, other_price in enumerate(day_prices):
                 if (
@@ -57,9 +56,8 @@ def validate_electricity_prices(electricity_prices):
                         price.time_of_use.start_hour < other_price.time_of_use.end_hour and
                         price.time_of_use.end_hour > other_price.time_of_use.start_hour
                 ):
-                    raise ValueError(f"❌ Electricity prices overlap for day {calendar.day_name[day - 1]}. "
+                    raise ValueError(f"❌ Electricity prices overlap for {calendar.day_name[day - 1]}. "
                                      f"Please check the time of use for each price.")
-
 
 def run_simulation(
         df: DataFrame,
