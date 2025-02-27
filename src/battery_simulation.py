@@ -177,7 +177,7 @@ def run_simulation(
 
 def read_data(csv_file):
     """
-    Read a CSV file into a pandas DataFrame.
+    Read the data from a CSV file and return a DataFrame.
 
     :param csv_file: Path to the CSV file
     :return: DataFrame containing the data from the CSV file
@@ -190,21 +190,61 @@ def read_data(csv_file):
         return None
 
 def main():
-    parser = argparse.ArgumentParser(description="Read a CSV file into a pandas DataFrame.")
-    parser.add_argument("csv_data", nargs="?", default="./data/shelly_data.csv", help="Path to the data CSV file")
-    parser.add_argument("csv_out", nargs="?", default="./output/simulation_results.csv", help="Path to the result CSV file")
+    """
+    Main function to run the simulation based on the input arguments.
+    """
+    parser = argparse.ArgumentParser(description="Run a simulation of a battery system based on the input data.")
+    parser.add_argument("--csv_data", default="./data/shelly_data.csv", help="Path to the data CSV file")
+    parser.add_argument("--csv_out", default="./output/simulation_results.csv", help="Path to the result CSV file")
+    parser.add_argument("--battery_nominal_capacity", type=float, default=10000, help="Nominal capacity of the battery in Wh")
+    parser.add_argument("--efficiency_charge", type=float, default=0.95, help="Efficiency of charging the battery")
+    parser.add_argument("--efficiency_discharge", type=float, default=0.95, help="Efficiency of discharging the battery")
+    parser.add_argument("--electricity_sell_price", type=float, default=0.10, help="Price of electricity when selling to the grid")
+    parser.add_argument("--energy_price", action="append", help="Energy price in the format 'start_hour-end_hour-price'")
+    parser.add_argument("--battery_cycles", type=int, default=5000, help="Number of battery cycles before capacity degradation")
+    parser.add_argument("--battery_capacity_after_cycles", type=float, default=0.80, help="Battery capacity after the specified number of cycles")
+    parser.add_argument("--dod_limit", type=float, default=0.30, help="Depth of discharge limit")
 
     args = parser.parse_args()
 
+    electricity_prices = []
+    if args.energy_price:
+        for price in args.energy_price:
+            start_hour, end_hour, price = price.split("-")
+            electricity_prices.append(ElectricityPrice(TimeOfUse(int(start_hour), int(end_hour)), float(price)))
+    else:
+        electricity_prices = [ElectricityPrice(TimeOfUse(0, 24), 0.30)]
+
+    try:
+        validate_electricity_prices(electricity_prices)
+    except ValueError as e:
+        print(f"❌ Error validating electricity prices: {e}")
+        return
+
     df = read_data(args.csv_data)
-    if df is not None:
-        print(f"✅ Data loaded successfully with {df.shape[0]} rows and {df.shape[1]} columns.")
-        df = run_simulation(df)
-        directory = os.path.dirname(args.csv_out)
-        if not os.path.exists(directory):
-            print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
-            os.makedirs(directory)
-        df.to_csv(args.csv_out, index=False)
-        print(f"✅ Simulation results saved to {args.csv_out}")
+    if df is None:
+        print("❌ Error reading data. Please check the input file.")
+        return
+    print(f"✅ Data loaded successfully with {df.shape[0]} rows and {df.shape[1]} columns.")
+
+    results = run_simulation(
+        df,
+        args.battery_nominal_capacity,
+        args.efficiency_charge,
+        args.efficiency_discharge,
+        electricity_prices,
+        args.electricity_sell_price,
+        args.battery_cycles,
+        args.battery_capacity_after_cycles,
+        args.dod_limit
+    )
+    directory = os.path.dirname(args.csv_out)
+    if not os.path.exists(directory):
+        print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
+        os.makedirs(directory)
+    results.to_csv(args.csv_out, index=False)
+    print(f"✅ Simulation results saved to {args.csv_out}")
+
+
 if __name__ == "__main__":
     main()
