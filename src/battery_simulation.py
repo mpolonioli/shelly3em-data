@@ -1,9 +1,9 @@
 import argparse
 import os
-
+import time
+import calendar
 from pandas import read_csv, DataFrame
 from dataclasses import dataclass
-import calendar
 
 @dataclass
 class TimeOfUse:
@@ -260,6 +260,7 @@ def main():
         return
     print(f"✅ Data loaded successfully with {df.shape[0]} rows and {df.shape[1]} columns.")
 
+    start_time = time.time()
     results = run_simulation(
         df,
         args.battery_nominal_capacity,
@@ -271,11 +272,14 @@ def main():
         args.battery_capacity_after_cycles,
         args.dod_limit
     )
+    end_time = time.time()
+
     directory = os.path.dirname(args.csv_out)
     if not os.path.exists(directory):
         print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
         os.makedirs(directory)
     results.to_csv(args.csv_out, index=False)
+    print(f"⏱️ Simulation completed in {end_time - start_time:.2f} seconds")
     print(f"✅ Simulation results saved to {args.csv_out}")
 
 
