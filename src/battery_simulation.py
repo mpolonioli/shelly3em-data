@@ -220,10 +220,11 @@ def main():
                         help="Efficiency of charging the battery")
     parser.add_argument("--efficiency_discharge", type=float, default=0.95,
                         help="Efficiency of discharging the battery")
-    parser.add_argument("--electricity_sell_price", type=float, default=0.10,
-                        help="Price of electricity when selling to the grid")
-    parser.add_argument("--energy_price", action="append",
-                        help="Energy price in the format 'days_of_week-start_hour-end_hour-price' "
+    parser.add_argument("--energy_sell_price", type=float, default=0.10,
+                        help="Price of energy when selling to the grid")
+    parser.add_argument("--energy_bought_price", action="append",
+                        help="Cost of energy when buying from the grid "
+                             "in the format 'days_of_week-start_hour-end_hour-price' "
                              "for example '1234567-0-24-0.30'")
     parser.add_argument("--battery_cycles", type=int, default=5000,
                         help="Number of battery cycles before capacity degradation")
@@ -235,8 +236,8 @@ def main():
     args = parser.parse_args()
 
     electricity_prices = []
-    if args.energy_price:
-        for price in args.energy_price:
+    if args.energy_bought_price:
+        for price in args.energy_bought_price:
             days_of_week, start_hour, end_hour, price = price.split("-")
             electricity_prices.append(ElectricityPrice(
                 TimeOfUse(
@@ -265,7 +266,7 @@ def main():
         args.efficiency_charge,
         args.efficiency_discharge,
         electricity_prices,
-        args.electricity_sell_price,
+        args.energy_sell_price,
         args.battery_cycles,
         args.battery_capacity_after_cycles,
         args.dod_limit
