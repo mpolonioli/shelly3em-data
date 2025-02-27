@@ -3,17 +3,26 @@ import os
 
 from pandas import read_csv, DataFrame
 from dataclasses import dataclass
+import calendar
 
 @dataclass
 class TimeOfUse:
+    days_of_week: set[int]
     start_hour: int
     end_hour: int
 
-    def __init__(self, start_hour: int, end_hour: int):
+    def __init__(self, start_hour: int, end_hour: int, days_of_week: set[int] = None):
+        if days_of_week is None:
+            days_of_week = {1, 2, 3, 4, 5, 6, 7}
+        if not all(1 <= day <= 7 for day in days_of_week):
+            raise ValueError("❌ Invalid days of week. "
+                             "Days must be between 1 and 7.")
         if not (0 <= start_hour < 24) or not (0 < end_hour <= 24) or start_hour >= end_hour:
-            raise ValueError("❌ Invalid time range. Hours must be between 0 and 24 and start_hour must be less than end_hour.")
+            raise ValueError("❌ Invalid time range. "
+                             "Hours must be between 0 and 24 and start_hour must be less than end_hour.")
         self.start_hour = start_hour
         self.end_hour = end_hour
+        self.days_of_week = days_of_week
 
 
 @dataclass
@@ -32,13 +41,24 @@ def validate_electricity_prices(electricity_prices):
 
     :param electricity_prices: List of ElectricityPrice objects
     """
-    electricity_prices.sort(key=lambda x: x.time_of_use.start_hour)
-    if electricity_prices[0].time_of_use.start_hour != 0 or electricity_prices[-1].time_of_use.end_hour != 24:
-        raise ValueError("❌ The time of use must start at 0 and end at 24 to cover the entire day.")
-    for i, price in enumerate(electricity_prices):
-        for j, other_price in enumerate(electricity_prices):
-            if i != j and price.time_of_use.start_hour < other_price.time_of_use.end_hour and price.time_of_use.end_hour > other_price.time_of_use.start_hour:
-                raise ValueError("❌ Electricity prices overlap. Please check the time of use for each price.")
+    electricity_prices.sort(key=lambda x: (x.time_of_use.days_of_week, x.time_of_use.start_hour))
+
+    for day in range(1, 8):
+        day_prices = [price for price in electricity_prices if day in price.time_of_use.days_of_week]
+        if not day_prices:
+            raise ValueError(f"❌ Missing electricity prices for {calendar.day_name[day - 1]}.")
+        if day_prices[0].time_of_use.start_hour != 0 or day_prices[-1].time_of_use.end_hour != 24:
+            raise ValueError(f"❌ The time of use must start at 0 and end at 24 to cover the entire day "
+                             f"for day {calendar.day_name[day - 1]}.")
+        for i, price in enumerate(day_prices):
+            for j, other_price in enumerate(day_prices):
+                if (
+                        i != j and
+                        price.time_of_use.start_hour < other_price.time_of_use.end_hour and
+                        price.time_of_use.end_hour > other_price.time_of_use.start_hour
+                ):
+                    raise ValueError(f"❌ Electricity prices overlap for day {calendar.day_name[day - 1]}. "
+                                     f"Please check the time of use for each price.")
 
 
 def run_simulation(
@@ -143,19 +163,12 @@ def run_simulation(
         # Calculate costs and revenues
         df.at[index, "bought"] = bought
         df.at[index, "sold"] = sold
-        df.at[index, "cost_without_battery"] = (
-                (df.at[index, "consumption"] / 1000) *
-                next(p.price
-                     for p in electricity_buy_prices
-                     if p.time_of_use.start_hour <= index.hour < p.time_of_use.end_hour)
-        )
+        electricity_buy_price = next(p.price for p in electricity_buy_prices if
+                                     p.time_of_use.start_hour <= index.hour < p.time_of_use.end_hour and
+                                     index.weekday() + 1 in p.time_of_use.days_of_week)
+        df.at[index, "cost_without_battery"] = (df.at[index, "consumption"] / 1000) * electricity_buy_price
         df.at[index, "revenue_without_battery"] = (df.at[index, "reversed"] / 1000) * electricity_sell_price
-        df.at[index, "cost_with_battery"] = (
-                (df.at[index, "bought"] / 1000) *
-                next(p.price
-                     for p in electricity_buy_prices
-                     if p.time_of_use.start_hour <= index.hour < p.time_of_use.end_hour)
-        )
+        df.at[index, "cost_with_battery"] = (df.at[index, "bought"] / 1000) * electricity_buy_price
         df.at[index, "revenue_without_battery"] = (df.at[index, "sold"] / 1000) * electricity_sell_price
 
         # Update battery capacity and cycles
@@ -172,7 +185,12 @@ def run_simulation(
         df.at[index, "max_charge"] = battery_max_charge
         df.at[index, "min_charge"] = battery_min_charge
         df.at[index, "capacity"] = battery_nominal_capacity - (battery_cycles * battery_loss_cycle)
-        print(f"📅 {index} - SOC: {battery_soc} Wh - Capacity: {battery_capacity} Wh - Cycles: {battery_cycles} - Max Charge: {battery_max_charge} Wh - Min Charge: {battery_min_charge} Wh")
+        print(f"📅 {index} - "
+              f"SOC: {battery_soc} Wh - "
+              f"Capacity: {battery_capacity} Wh - "
+              f"Cycles: {battery_cycles} - "
+              f"Max Charge: {battery_max_charge} Wh - "
+              f"Min Charge: {battery_min_charge} Wh")
     return df
 
 def read_data(csv_file):
@@ -194,24 +212,40 @@ def main():
     Main function to run the simulation based on the input arguments.
     """
     parser = argparse.ArgumentParser(description="Run a simulation of a battery system based on the input data.")
-    parser.add_argument("--csv_data", default="./data/shelly_data.csv", help="Path to the data CSV file")
-    parser.add_argument("--csv_out", default="./output/simulation_results.csv", help="Path to the result CSV file")
-    parser.add_argument("--battery_nominal_capacity", type=float, default=10000, help="Nominal capacity of the battery in Wh")
-    parser.add_argument("--efficiency_charge", type=float, default=0.95, help="Efficiency of charging the battery")
-    parser.add_argument("--efficiency_discharge", type=float, default=0.95, help="Efficiency of discharging the battery")
-    parser.add_argument("--electricity_sell_price", type=float, default=0.10, help="Price of electricity when selling to the grid")
-    parser.add_argument("--energy_price", action="append", help="Energy price in the format 'start_hour-end_hour-price'")
-    parser.add_argument("--battery_cycles", type=int, default=5000, help="Number of battery cycles before capacity degradation")
-    parser.add_argument("--battery_capacity_after_cycles", type=float, default=0.80, help="Battery capacity after the specified number of cycles")
-    parser.add_argument("--dod_limit", type=float, default=0.30, help="Depth of discharge limit")
+    parser.add_argument("--csv_data", default="./data/shelly_data.csv",
+                        help="Path to the data CSV file")
+    parser.add_argument("--csv_out", default="./output/simulation_results.csv",
+                        help="Path to the result CSV file")
+    parser.add_argument("--battery_nominal_capacity", type=float, default=10000,
+                        help="Nominal capacity of the battery in Wh")
+    parser.add_argument("--efficiency_charge", type=float, default=0.95,
+                        help="Efficiency of charging the battery")
+    parser.add_argument("--efficiency_discharge", type=float, default=0.95,
+                        help="Efficiency of discharging the battery")
+    parser.add_argument("--electricity_sell_price", type=float, default=0.10,
+                        help="Price of electricity when selling to the grid")
+    parser.add_argument("--energy_price", action="append",
+                        help="Energy price in the format 'days_of_week-start_hour-end_hour-price' "
+                             "for example '1234567-0-24-0.30'")
+    parser.add_argument("--battery_cycles", type=int, default=5000,
+                        help="Number of battery cycles before capacity degradation")
+    parser.add_argument("--battery_capacity_after_cycles", type=float, default=0.80,
+                        help="Battery capacity after the specified number of cycles")
+    parser.add_argument("--dod_limit", type=float, default=0.30,
+                        help="Depth of discharge limit")
 
     args = parser.parse_args()
 
     electricity_prices = []
     if args.energy_price:
         for price in args.energy_price:
-            start_hour, end_hour, price = price.split("-")
-            electricity_prices.append(ElectricityPrice(TimeOfUse(int(start_hour), int(end_hour)), float(price)))
+            days_of_week, start_hour, end_hour, price = price.split("-")
+            electricity_prices.append(ElectricityPrice(
+                TimeOfUse(
+                    int(start_hour),
+                    int(end_hour),
+                    set(map(int, days_of_week))),
+                float(price)))
     else:
         electricity_prices = [ElectricityPrice(TimeOfUse(0, 24), 0.30)]
 
