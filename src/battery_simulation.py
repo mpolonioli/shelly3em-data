@@ -26,6 +26,21 @@ class ElectricityPrice:
         self.price = price
 
 
+def validate_electricity_prices(electricity_prices):
+    """
+    Validate the electricity prices based on the time of use.
+
+    :param electricity_prices: List of ElectricityPrice objects
+    """
+    electricity_prices.sort(key=lambda x: x.time_of_use.start_hour)
+    if electricity_prices[0].time_of_use.start_hour != 0 or electricity_prices[-1].time_of_use.end_hour != 24:
+        raise ValueError("❌ The time of use must start at 0 and end at 24 to cover the entire day.")
+    for i, price in enumerate(electricity_prices):
+        for j, other_price in enumerate(electricity_prices):
+            if i != j and price.time_of_use.start_hour < other_price.time_of_use.end_hour and price.time_of_use.end_hour > other_price.time_of_use.start_hour:
+                raise ValueError("❌ Electricity prices overlap. Please check the time of use for each price.")
+
+
 def run_simulation(
         df: DataFrame,
         battery_nominal_capacity: float = 10000,
@@ -53,6 +68,7 @@ def run_simulation(
     """
     if not electricity_buy_prices:
         electricity_buy_prices = [ElectricityPrice(TimeOfUse(0, 24), 0.30)]
+    validate_electricity_prices(electricity_buy_prices)
     battery_loss_cycle = (battery_capacity_after_cycles / battery_cycles) * battery_nominal_capacity
     battery_max_charge = battery_nominal_capacity * (1 - dod_limit)
     battery_min_charge = battery_nominal_capacity * dod_limit
