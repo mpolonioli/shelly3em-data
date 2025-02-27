@@ -167,7 +167,7 @@ def run_simulation(
         df.at[index, "cost_without_battery"] = (df.at[index, "consumption"] / 1000) * electricity_buy_price
         df.at[index, "revenue_without_battery"] = (df.at[index, "reversed"] / 1000) * electricity_sell_price
         df.at[index, "cost_with_battery"] = (df.at[index, "bought"] / 1000) * electricity_buy_price
-        df.at[index, "revenue_without_battery"] = (df.at[index, "sold"] / 1000) * electricity_sell_price
+        df.at[index, "revenue_with_battery"] = (df.at[index, "sold"] / 1000) * electricity_sell_price
 
         # Update battery capacity and cycles
         discharge_total += discharge
