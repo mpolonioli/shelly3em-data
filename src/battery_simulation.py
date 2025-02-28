@@ -269,6 +269,12 @@ def main():
         print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
         os.makedirs(directory)
     results.to_csv(args.csv_out, index=True)
+
+    args_file = os.path.join(directory, "simulation_args.txt")
+    with open(args_file, "w") as f:
+        for arg, value in vars(args).items():
+            f.write(f"{arg}: {value}\n")
+
     print(f"⏱️ Simulation completed in {end_time - start_time:.2f} seconds")
     print(f"✅ Simulation results saved to {args.csv_out}")
 
