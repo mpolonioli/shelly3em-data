@@ -62,6 +62,7 @@ def validate_electricity_prices(electricity_prices):
 def run_simulation(
         df: DataFrame,
         battery_nominal_capacity: float = 10000,
+        initial_charge: float = 0.20,
         efficiency_charge: float = 0.95,
         efficiency_discharge: float = 0.95,
         electricity_buy_prices: list[ElectricityPrice] = None,
@@ -75,6 +76,7 @@ def run_simulation(
 
     :param df: Input DataFrame
     :param battery_nominal_capacity: Nominal capacity of the battery in Wh
+    :param initial_charge: Initial state of charge of the battery
     :param efficiency_charge: Efficiency of charging the battery
     :param efficiency_discharge: Efficiency of discharging the battery
     :param electricity_buy_prices: Price of electricity when buying from the grid based on time of use
@@ -102,7 +104,9 @@ def run_simulation(
     df["OUT"] = df["consumption"]
 
     # Start the simulation
-    battery_soc, previous_soc, discharge_total = 0, 0, 0
+    battery_soc =  battery_nominal_capacity * initial_charge
+    previous_soc = battery_soc
+    discharge_total = 0
     for index, row in df.iterrows():
         charge, discharge, bought, sold = 0, 0, 0, 0
         df.at[index, "previous_soc"] = previous_soc
@@ -201,27 +205,29 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Run a simulation of a battery system based on the input data.")
     parser.add_argument("--csv_data", default="./data/shelly_data.csv",
-                        help="Path to the data CSV file")
+                        help="Path to the data CSV file (default: ./data/shelly_data.csv)")
     parser.add_argument("--csv_out", default="./output/simulation_results.csv",
-                        help="Path to the result CSV file")
+                        help="Path to the result CSV file (default: ./output/simulation_results.csv)")
     parser.add_argument("--battery_nominal_capacity", type=float, default=10000,
-                        help="Nominal capacity of the battery in Wh")
+                        help="Nominal capacity of the battery in Wh (default: 10000)")
+    parser.add_argument("--initial_charge", type=float, default=0.20,
+                        help="Initial state of charge of the battery in percentage (default: 0.20)")
     parser.add_argument("--efficiency_charge", type=float, default=0.95,
-                        help="Efficiency of charging the battery")
+                        help="Efficiency of charging the battery in percentage (default: 0.95)")
     parser.add_argument("--efficiency_discharge", type=float, default=0.95,
-                        help="Efficiency of discharging the battery")
+                        help="Efficiency of discharging the battery in percentage (default: 0.95)")
     parser.add_argument("--energy_sell_price", type=float, default=0.10,
-                        help="Price of energy when selling to the grid")
+                        help="Price of energy when selling to the grid in $/kWh (default: 0.10)")
     parser.add_argument("--energy_bought_price", action="append",
                         help="Cost of energy when buying from the grid "
                              "in the format 'days_of_week-start_hour-end_hour-price' "
-                             "for example '1234567-0-24-0.30'")
+                             "for example '1234567-0-24-0.30' which is the default price")
     parser.add_argument("--battery_cycles", type=int, default=5000,
-                        help="Number of battery cycles before capacity degradation")
+                        help="Number of battery cycles before capacity degradation (default: 5000)")
     parser.add_argument("--battery_capacity_after_cycles", type=float, default=0.80,
-                        help="Battery capacity after the specified number of cycles")
+                        help="Battery capacity after the specified number of cycles in percentage (default: 0.80)")
     parser.add_argument("--dod_limit", type=float, default=0.30,
-                        help="Depth of discharge limit")
+                        help="Depth of discharge limit in percentage (default: 0.30)")
 
     args = parser.parse_args()
 
@@ -254,6 +260,7 @@ def main():
     results = run_simulation(
         df,
         args.battery_nominal_capacity,
+        args.initial_charge,
         args.efficiency_charge,
         args.efficiency_discharge,
         electricity_prices,
