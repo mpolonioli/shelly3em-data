@@ -98,14 +98,15 @@ def run_simulation(
 
     # Calculate net energy and separate consumption and reversed energy
     df["net_energy"] = df["reversed"] - df["consumption"]
-    df["IN"] = df["net_energy"].apply(lambda x: x if x > 0 else 0)
-    df["OUT"] = df["net_energy"].apply(lambda x: -x if x < 0 else 0)
+    df["IN"] = df["reversed"]
+    df["OUT"] = df["consumption"]
 
     # Start the simulation
     battery_soc = 0
     discharge_total = 0
     for index, row in df.iterrows():
         previous_soc = battery_soc
+        charge, discharge, bought, sold = 0, 0, 0, 0
         # Check if we are charging, discharging, or idle
         if row["IN"] > 0:
             # Check if the battery SOC is above the maximum charge
@@ -114,43 +115,28 @@ def run_simulation(
                 battery_soc = battery_max_charge
                 charge = battery_soc - previous_soc
                 sold = row["IN"] - (charge * efficiency_charge)
-                discharge = 0
-                bought = 0
                 if charge > 0:
                     print(f"➕ Charging {charge:.2f} Wh")
                 print(f"💵 Selling {sold:.2f} Wh")
             else:
                 charge = row["IN"] * efficiency_charge
-                sold = 0
-                discharge = 0
-                bought = 0
                 print(f"➕ Charging {charge:.2f} Wh")
-        elif row["OUT"] > 0:
+        if row["OUT"] > 0:
             battery_soc -= row["OUT"] * efficiency_discharge
             # Check if the battery SOC is below the minimum charge
-            if battery_soc < battery_min_charge or battery_soc < 0:
+            if battery_soc < battery_min_charge:
                 if battery_soc < 0:
                     battery_soc = 0
                 else:
                     battery_soc = battery_min_charge
                 discharge = previous_soc - battery_soc
                 bought = row["OUT"] - (discharge * efficiency_discharge)
-                charge = 0
-                sold = 0
                 if discharge > 0:
                     print(f"➖ Discharging {discharge:.2f} Wh")
                 print(f"💸 Buying {bought:.2f} Wh")
             else:
                 discharge = row["OUT"] * efficiency_discharge
-                bought = 0
-                charge = 0
-                sold = 0
                 print(f"➖ Discharging {discharge:.2f} Wh")
-        else:
-            discharge = 0
-            bought = 0
-            charge = 0
-            sold = 0
 
         # Update battery SOC
         df.at[index, "battery_soc"] = battery_soc
