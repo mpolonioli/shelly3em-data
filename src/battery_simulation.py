@@ -101,11 +101,6 @@ def run_simulation(
     df = df.drop_duplicates(subset=["datetime"])
     df = df.set_index("datetime")
 
-    # Calculate net energy and separate consumption and reversed energy
-    df["net_energy"] = df["reversed"] - df["consumption"]
-    df["IN"] = df["reversed"]
-    df["OUT"] = df["consumption"]
-
     # Start the simulation
     battery_soc =  battery_nominal_capacity * initial_charge
     previous_soc = battery_soc
@@ -115,30 +110,30 @@ def run_simulation(
         df.at[index, "previous_soc"] = previous_soc
         previous_soc = battery_soc
         # Check if there is energy coming in
-        if row["IN"] > 0:
-            battery_soc += round(row["IN"] * efficiency_charge, 10)
+        if row["reversed"] > 0:
+            battery_soc += round(row["reversed"] * efficiency_charge, 10)
             # Check if the battery SOC is above the maximum charge
             if battery_soc > battery_max_charge:
                 battery_soc = battery_max_charge
                 charge = battery_soc - previous_soc
-                sold = round(row["IN"] - (charge * efficiency_charge))
+                sold = round(row["reversed"] - (charge * efficiency_charge))
             else:
-                charge = round(row["IN"] * efficiency_charge)
+                charge = round(row["reversed"] * efficiency_charge)
 
         # Check if there is energy going out
         previous_soc = battery_soc
-        if row["OUT"] > 0:
-            battery_soc -= round(row["OUT"] / efficiency_discharge, 10)
+        if row["consumption"] > 0:
+            battery_soc -= round(row["consumption"] / efficiency_discharge, 10)
             # Check if the battery SOC is below the minimum charge
             if previous_soc <= battery_min_charge:
                 battery_soc = previous_soc
-                bought = row["OUT"]
+                bought = row["consumption"]
             elif battery_soc <= battery_min_charge:
                 battery_soc = battery_min_charge
                 discharge = previous_soc - battery_min_charge
-                bought = round(row["OUT"] - (discharge * efficiency_discharge), 10)
+                bought = round(row["consumption"] - (discharge * efficiency_discharge), 10)
             else:
-                discharge = round(row["OUT"] * efficiency_discharge)
+                discharge = round(row["consumption"] * efficiency_discharge)
 
         # Print actions performed in sequence
         if charge > 0:

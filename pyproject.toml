@@ -15,4 +15,6 @@ license = {text = "MIT"}
 distribution = false
 
 [tool.pdm.scripts]
-start = "python src/get_data.py"
+get_data = "python src/get_data.py"
+generate_data = "python src/generate_data.py"
+battery_simulation = "python src/battery_simulation.py"

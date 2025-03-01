@@ -81,11 +81,11 @@ async def generate_yearly_data(year, base_range, peak_range, cold_months, hot_mo
         "datetime": hours,
         "Energy_Consumed_Wh": consumed,
         "Energy_Produced_Wh": produced,
-        "consumed": taken_from_grid,
+        "consumption": taken_from_grid,
         "reversed": returned_to_grid,
     })
 
-    df = df.round({"Energy_Consumed_Wh": 10, "Energy_Produced_Wh": 10, "consumed": 10, "reversed": 10})
+    df = df.round({"Energy_Consumed_Wh": 10, "Energy_Produced_Wh": 10, "consumption": 10, "reversed": 10})
     return df
 
 # Generate energy dataset
