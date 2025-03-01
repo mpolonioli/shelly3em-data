@@ -77,13 +77,16 @@ async def generate_yearly_data(year, base_range, peak_range, cold_months, hot_mo
     grid_usage = [calculate_grid_usage(c, p, self_consumption_ratio) for c, p in zip(consumed, produced)]
     taken_from_grid, returned_to_grid = zip(*grid_usage)
 
-    return pd.DataFrame({
+    df = pd.DataFrame({
         "datetime": hours,
         "Energy_Consumed_Wh": consumed,
         "Energy_Produced_Wh": produced,
         "consumed": taken_from_grid,
         "reversed": returned_to_grid,
     })
+
+    df = df.round({"Energy_Consumed_Wh": 10, "Energy_Produced_Wh": 10, "consumed": 10, "reversed": 10})
+    return df
 
 # Generate energy dataset
 async def generate_energy_data(start_year, years, base_range, peak_range, cold_months, hot_months, cold_factor, hot_factor, self_consumption_ratio, cold_daylight_range, hot_daylight_range, cold_production_range, hot_production_range):
