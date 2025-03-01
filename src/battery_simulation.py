@@ -5,6 +5,8 @@ import calendar
 from pandas import read_csv, DataFrame
 from dataclasses import dataclass
 
+from tabulate import tabulate
+
 from src.utils import is_valid_path
 
 
@@ -283,6 +285,21 @@ def main():
             f.write(f"{arg}: {value}\n")
     print(f"✅ Simulation parameters saved to {args_file}")
 
+    monthly_totals = results.groupby([results.index.year, results.index.month]).agg({
+        'cost_without_battery': 'sum',
+        'revenue_without_battery': 'sum',
+        'cost_with_battery': 'sum',
+        'revenue_with_battery': 'sum'
+    }).rename_axis(['year', 'month']).reset_index().round(2)
+    monthly_totals['diff_without_battery'] = monthly_totals['cost_without_battery'] - monthly_totals['revenue_without_battery']
+    monthly_totals['diff_with_battery'] = monthly_totals['cost_with_battery'] - monthly_totals['revenue_with_battery']
+    monthly_totals['savings'] = monthly_totals['diff_without_battery'] - monthly_totals['diff_with_battery']
+    grand_totals = monthly_totals[['cost_without_battery', 'revenue_without_battery', 'cost_with_battery', 'revenue_with_battery', 'diff_without_battery', 'diff_with_battery', 'savings']].sum()
+    grand_totals['year'] = 'Total'
+    grand_totals['month'] = ''
+    monthly_totals.loc[len(monthly_totals)] = grand_totals
+    print("📊 Monthly totals:")
+    print(tabulate(monthly_totals, headers='keys', tablefmt='psql', showindex=False))
 
 if __name__ == "__main__":
     main()
