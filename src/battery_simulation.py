@@ -218,7 +218,7 @@ def main():
                         help="Efficiency of discharging the battery in percentage (default: 0.95)")
     parser.add_argument("--energy_sell_price", type=float, default=0.10,
                         help="Price of energy when selling to the grid in $/kWh (default: 0.10)")
-    parser.add_argument("--energy_bought_price", action="append",
+    parser.add_argument("--energy_bought_price", action="append", nargs="+",
                         help="Cost of energy when buying from the grid "
                              "in the format 'days_of_week-start_hour-end_hour-price' "
                              "for example '1234567-0-24-0.30' which is the default price")
@@ -233,7 +233,7 @@ def main():
 
     electricity_prices = []
     if args.energy_bought_price:
-        for price in args.energy_bought_price:
+        for price in [price for prices in args.energy_bought_price for price in prices]:
             days_of_week, start_hour, end_hour, price = price.split("-")
             electricity_prices.append(ElectricityPrice(
                 TimeOfUse(
