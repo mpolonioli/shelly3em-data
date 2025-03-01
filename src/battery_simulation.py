@@ -5,6 +5,9 @@ import calendar
 from pandas import read_csv, DataFrame
 from dataclasses import dataclass
 
+from src.utils import is_valid_path
+
+
 @dataclass
 class TimeOfUse:
     days_of_week: set[int]
@@ -231,6 +234,9 @@ def main():
 
     args = parser.parse_args()
 
+    if not is_valid_path(args.csv_out):
+        return
+
     electricity_prices = []
     if args.energy_bought_price:
         for price in [price for prices in args.energy_bought_price for price in prices]:
@@ -269,21 +275,18 @@ def main():
         args.battery_capacity_after_cycles,
         args.dod_limit
     )
-    end_time = time.time()
+    print(f"⏱️ Simulation completed in {time.time() - start_time:.2f} seconds")
 
-    directory = os.path.dirname(args.csv_out)
-    if not os.path.exists(directory):
-        print(f"🔨 Directory '{directory}' does not exist. Creating it now...")
-        os.makedirs(directory)
     results.to_csv(args.csv_out, index=True)
-
-    args_file = os.path.join(directory, "simulation_args.txt")
-    with open(args_file, "w") as f:
-        for arg, value in vars(args).items():
-            f.write(f"{arg}: {value}\n")
-
-    print(f"⏱️ Simulation completed in {end_time - start_time:.2f} seconds")
     print(f"✅ Simulation results saved to {args.csv_out}")
+
+    args_file = os.path.join(os.path.dirname(args.csv_out), "simulation_args.txt")
+    with open(args_file, "w") as f:
+        print("🔧 Simulation parameters:")
+        for arg, value in vars(args).items():
+            print(f"\t- {arg}: {value}")
+            f.write(f"{arg}: {value}\n")
+    print(f"✅ Simulation parameters saved to {args_file}")
 
 
 if __name__ == "__main__":
